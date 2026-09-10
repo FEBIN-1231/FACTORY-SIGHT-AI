@@ -1,0 +1,354 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================================================= */
+/* 1. SINGLE FIXED THEME PALETTE & CSS TOKENS                                */
+/* ========================================================================= */
+:root {
+  /* Page & Surface Backgrounds */
+  --bg-page: #10141B;           /* Darkest background - Page backdrop */
+  --bg-card: #171E28;           /* Card / panel / sidebar / navbar / modal background */
+  --bg-card-elevated: #1E2836;  /* Elevated cards, nested containers */
+  --bg-input: #10141B;          /* Input field background */
+  
+  /* Borders, Dividers & Interactive Surfaces */
+  --border-subtle: #253441;     /* Borders, dividers, subtle outlines */
+  --border-strong: #314B5C;     /* Active / focused borders */
+  --surface-hover: #314B5C;     /* Hover states, secondary buttons, muted UI elements */
+
+  /* Text Hierarchy & Contrast Scale */
+  --text-primary: #F5F7FA;      /* Headings, titles, high-priority labels (17.35:1 vs #10141B) */
+  --text-secondary: #C7CDD4;    /* Body copy, descriptions, navigation (11.41:1 vs #10141B) */
+  --text-muted: #8B95A1;        /* Placeholders, timestamps, hints (6.12:1 vs #10141B, 5.51:1 vs #171E28) */
+  --text-disabled: #64748B;     /* Inactive elements (3.85:1 contrast vs #10141B) */
+  --text-accent: #FE4B4A;       /* Bright red accent for links & small accent text (5.53:1 contrast) */
+  --text-on-accent: #FFFFFF;    /* White text on solid red buttons (6.02:1 contrast) */
+
+  /* Brand Red Accents */
+  --brand-primary: #C41E23;     /* Deep red accent: primary buttons, active nav indicators, solid fills */
+  --brand-accent: #FE4B4A;      /* Bright red accent: hover state for primary buttons/links, small text */
+  --brand-glow: rgba(254, 75, 74, 0.3);
+  --brand-subtle: rgba(196, 30, 35, 0.18);
+  --brand-border: rgba(254, 75, 74, 0.35);
+
+  /* Semantic Status Colors (Protected from Brand Red) */
+  --status-healthy: #34D399;    /* Healthy / Optimal (Emerald Green) */
+  --status-warning: #FBBF24;    /* Warning / Caution (Amber Yellow) */
+  --status-critical: #F87171;   /* Critical / Alarm (Coral Red) */
+
+  /* Scrollbars */
+  --scrollbar-track: #10141B;
+  --scrollbar-thumb: #253441;
+  --scrollbar-thumb-hover: #314B5C;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* ========================================================================= */
+/* 2. GLOBAL THEME ENGINE BINDINGS ACROSS ALL PAGES & COMPONENTS             */
+/* ========================================================================= */
+
+/* Page background containers */
+.bg-slate-950,
+[class*="bg-slate-950"],
+[class*="from-slate-950"],
+[class*="via-slate-950"],
+[class*="to-slate-950"] {
+  background-color: var(--bg-page) !important;
+}
+
+/* Card and Panel containers */
+.bg-slate-900,
+.bg-slate-850,
+[class*="bg-slate-900"],
+[class*="bg-slate-850"] {
+  background-color: var(--bg-card) !important;
+}
+
+/* Elevated containers */
+.bg-slate-800,
+[class*="bg-slate-800"] {
+  background-color: var(--bg-card-elevated) !important;
+}
+
+.bg-slate-750,
+.bg-slate-700,
+[class*="bg-slate-700"],
+[class*="bg-slate-750"] {
+  background-color: var(--border-subtle) !important;
+}
+
+/* Gradients */
+.from-slate-900.via-slate-850,
+.from-slate-900.to-slate-800,
+.bg-gradient-to-r.from-slate-900,
+[class*="from-slate-900\/60"] {
+  background-image: linear-gradient(135deg, #171E28 0%, #1E2836 100%) !important;
+}
+
+/* Borders & Dividers */
+.border-slate-800,
+.border-slate-750,
+.border-slate-700,
+[class*="border-slate-800"],
+[class*="border-slate-750"],
+[class*="border-slate-700"] {
+  border-color: var(--border-subtle) !important;
+}
+
+/* High Contrast Typography */
+h1, h2, h3, h4, h5, h6,
+.text-white,
+.text-slate-100,
+.text-slate-200,
+[class*="text-slate-100"],
+[class*="text-slate-200"] {
+  color: var(--text-primary) !important;
+}
+
+p,
+.text-slate-300,
+.text-slate-400,
+[class*="text-slate-300"],
+[class*="text-slate-400"] {
+  color: var(--text-secondary) !important;
+}
+
+.text-slate-500,
+.text-slate-600,
+[class*="text-slate-500"],
+[class*="text-slate-600"] {
+  color: var(--text-muted) !important;
+}
+
+/* Unified Brand Accents (Overrides cyan, blue, indigo, purple legacy references) */
+.text-cyan-400,
+.text-cyan-300,
+.text-cyan-500,
+.text-blue-400,
+.text-blue-300,
+.text-indigo-400,
+.text-purple-400,
+[class*="text-cyan-"] {
+  color: var(--brand-accent) !important;
+}
+
+.bg-cyan-500\/10,
+.bg-cyan-500\/15,
+.bg-cyan-500\/20,
+.bg-blue-500\/10,
+.bg-blue-500\/20,
+.bg-purple-500\/10,
+[class*="bg-cyan-500"],
+[class*="bg-cyan-950"],
+[class*="bg-blue-500"],
+[class*="bg-purple-500"] {
+  background-color: var(--brand-subtle) !important;
+  color: var(--brand-accent) !important;
+}
+
+.border-cyan-500,
+.border-cyan-500\/30,
+.border-cyan-500\/40,
+.border-blue-500\/30,
+.border-purple-500\/30,
+[class*="border-cyan-"],
+[class*="border-blue-"] {
+  border-color: var(--brand-border) !important;
+}
+
+/* Focus and ring states */
+[class*="focus:border-cyan-"],
+[class*="focus:border-blue-"] {
+  border-color: var(--brand-accent) !important;
+}
+
+/* Solid Action Buttons */
+button.bg-cyan-600,
+a.bg-cyan-600,
+.bg-cyan-600,
+.bg-blue-600 {
+  background-color: var(--brand-primary) !important;
+  color: #FFFFFF !important;
+}
+
+button.hover\:bg-cyan-500:hover,
+a.hover\:bg-cyan-500:hover,
+.hover\:bg-cyan-500:hover {
+  background-color: var(--brand-accent) !important;
+  color: #FFFFFF !important;
+}
+
+.from-cyan-600.to-blue-600,
+.from-cyan-500.to-blue-600,
+.from-blue-600.to-indigo-600,
+.from-indigo-600.to-purple-600,
+[class*="from-cyan-"],
+[class*="to-blue-"] {
+  background-image: linear-gradient(135deg, var(--brand-primary), var(--brand-accent)) !important;
+  color: #FFFFFF !important;
+}
+
+.hover\:from-cyan-500.hover\:to-blue-500:hover,
+[class*="hover:from-cyan-"] {
+  background-image: linear-gradient(135deg, var(--brand-accent), var(--brand-primary)) !important;
+  color: #FFFFFF !important;
+}
+
+.hover\:bg-slate-800:hover,
+.hover\:bg-slate-700:hover,
+.hover\:bg-slate-900:hover,
+[class*="hover:bg-slate-800"]:hover,
+[class*="hover:bg-slate-700"]:hover {
+  background-color: var(--surface-hover) !important;
+}
+
+/* Form inputs */
+input,
+select,
+textarea {
+  background-color: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Table styling */
+thead, thead tr {
+  background-color: var(--bg-page) !important;
+  color: var(--text-secondary) !important;
+}
+
+tbody tr {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+tbody tr:hover {
+  background-color: var(--bg-card-elevated) !important;
+}
+
+/* ========================================================================= */
+/* 3. PROTECTED SEMANTIC STATUS COLORS (HEALTHY, WARNING, CRITICAL)          */
+/* ========================================================================= */
+.text-emerald-400,
+.text-emerald-300,
+.text-emerald-500 {
+  color: var(--status-healthy) !important;
+}
+
+.text-amber-400,
+.text-amber-300,
+.text-amber-500 {
+  color: var(--status-warning) !important;
+}
+
+.text-red-400,
+.text-red-300,
+.text-red-500 {
+  color: var(--status-critical) !important;
+}
+
+/* Status Badges */
+.bg-emerald-500\/10,
+.bg-emerald-500\/15,
+.bg-emerald-500\/20 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+.bg-amber-500\/10,
+.bg-amber-500\/15,
+.bg-amber-500\/20 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+.bg-red-500\/10,
+.bg-red-500\/15,
+.bg-red-500\/20 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+.border-emerald-500\/20,
+.border-emerald-500\/30,
+.border-emerald-500\/40 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.border-amber-500\/20,
+.border-amber-500\/30,
+.border-amber-500\/40 {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.border-red-500\/20,
+.border-red-500\/30,
+.border-red-500\/40 {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Dual-tone glowing radar dot for live beacons */
+@keyframes beacon-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 var(--brand-glow);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(0, 0, 0, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+.beacon-glow {
+  animation: beacon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.6s infinite;
+}

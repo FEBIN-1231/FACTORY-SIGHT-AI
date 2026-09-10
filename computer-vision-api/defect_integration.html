@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Defect Detection Integration</title>
+    <style>
+        body {
+            background-color: #10141B;
+            color: #F5F7FA;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 24px;
+            margin: 0;
+        }
+
+        .defect-container {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        h3 {
+            color: #F5F7FA;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .video-box img {
+            border: 1px solid #253441;
+            border-radius: 12px;
+            width: 640px;
+            height: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .status-box {
+            background: #171E28;
+            border: 1px solid #253441;
+            padding: 20px;
+            border-radius: 12px;
+            min-width: 280px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        li {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            background: #1E2836;
+            border: 1px solid #253441;
+            font-family: monospace;
+            font-size: 12px;
+            color: #C7CDD4;
+        }
+
+        li strong {
+            color: #FE4B4A;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="defect-container">
+        <!-- Live Video Stream from FastAPI Backend -->
+        <div class="video-box">
+            <h3>Live Optical Inspection Feed</h3>
+            <img src="http://127.0.0.1:8000/video_feed" alt="Live Defect Stream" />
+        </div>
+
+        <!-- Real-time JSON Telemetry Sidebar -->
+        <div class="status-box">
+            <h3>YOLO Detection Status</h3>
+            <ul id="defect-list">
+                <li>Connecting to server...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Fetch detection telemetry every second
+        setInterval(async () => {
+            try {
+                let response = await fetch('http://127.0.0.1:8000/detect_status');
+                let data = await response.json();
+                let listElement = document.getElementById('defect-list');
+
+                if (!data || !data.detections || data.detections.length === 0) {
+                    listElement.innerHTML = '<li>No defects detected</li>';
+                } else {
+                    let html = '';
+                    data.detections.forEach(item => {
+                        let className = (item.class || item.type || item.defectType || 'defect').toUpperCase();
+                        let conf = item.confidence || '';
+                        html += `<li><strong>${className}</strong>: ${conf}%</li>`;
+                    });
+                    listElement.innerHTML = html;
+                }
+            } catch (err) {
+                console.error('Failed to fetch defect status:', err);
+                document.getElementById('defect-list').innerHTML = '<li style="color: red;">Server offline</li>';
+            }
+        }, 1000);
+    </script>
+
+</body>
+
+</html>

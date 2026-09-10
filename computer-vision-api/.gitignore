@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Environment Variables
+.env
+.env.local
+
+# Model Weights (do not commit large binary weights)
+models/*.pt
+models/*.onnx
+!models/.gitkeep
+
+# Uploads & Annotated Outputs
+uploads/*
+!uploads/.gitkeep
+annotated/*
+!annotated/.gitkeep
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+*/node_modules/
+package-lock.json.bak
+
+# Production Builds
+dist/
+*/dist/
+dist-ssr/
+*.local
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+*/*.env
+*/*.env.*
+!*/*.env.example
+
+# Python
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Computer Vision Weights & Dynamic Artifacts
+computer-vision-api/models/*.pt
+computer-vision-api/models/*.onnx
+!computer-vision-api/models/.gitkeep
+computer-vision-api/*.pt
+computer-vision-api/uploads/*
+!computer-vision-api/uploads/.gitkeep
+computer-vision-api/annotated/*
+!computer-vision-api/annotated/.gitkeep
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

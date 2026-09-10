@@ -107,7 +107,6 @@ export const Dashboard = () => {
           subtitle="Target: > 85.0%"
           trend={summary?.oeeTrend || '+2.4%'}
           icon={Activity}
-          icon3D="shield"
           progress={89.6}
           status="healthy"
         />
@@ -118,7 +117,6 @@ export const Dashboard = () => {
           subtitle="100% Ingestion Up-time"
           trend="All Online"
           icon={Cpu}
-          icon3D="gear"
           status="normal"
         />
         <MetricCard
@@ -136,7 +134,6 @@ export const Dashboard = () => {
           subtitle="1 High, 1 Moderate"
           trend="Action Req."
           icon={AlertTriangle}
-          icon3D="alert"
           status={alerts.some((a) => !a.ack && a.severity === 'HIGH') ? 'critical' : 'normal'}
         />
       </motion.div>

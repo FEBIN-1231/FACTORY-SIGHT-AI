@@ -83,17 +83,23 @@ export const loginWithGoogle = async (roleOverride = 'OPERATOR', simulatedProfil
   let googleUser = null;
   let token = null;
 
-  try {
-    const cred = await signInWithPopup(auth, googleProvider);
-    token = await cred.user.getIdToken();
-    googleUser = {
-      uid: cred.user.uid,
-      displayName: cred.user.displayName,
-      email: cred.user.email,
-      photoURL: cred.user.photoURL,
-    };
-  } catch (err) {
-    // If Firebase popup fails (e.g. demo mode / offline / unconfigured), use mock profile for smooth testing
+  if (auth && googleProvider) {
+    try {
+      const cred = await signInWithPopup(auth, googleProvider);
+      token = await cred.user.getIdToken();
+      googleUser = {
+        uid: cred.user.uid,
+        displayName: cred.user.displayName,
+        email: cred.user.email,
+        photoURL: cred.user.photoURL,
+      };
+    } catch (err) {
+      console.warn('[Google Auth] Firebase popup failed or cancelled, using simulated profile fallback:', err);
+    }
+  }
+
+  // If Firebase unconfigured, offline, or popup cancelled/failed, use fallback profile
+  if (!googleUser) {
     const mockEmail = simulatedProfile?.email || 'alex.morgan.google@factorysight.ai';
     const mockName = simulatedProfile?.name || 'Alex Morgan';
     googleUser = {

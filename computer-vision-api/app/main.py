@@ -50,6 +50,13 @@ app.add_middleware(
 )
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Silences browser favicon requests cleanly with 204 No Content."""
+    from fastapi.responses import Response
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch-all unhandled exception handler ensuring consistent JSON error responses."""

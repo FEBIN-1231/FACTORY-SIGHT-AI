@@ -176,6 +176,20 @@ async def switch_camera(index: int = 1):
     return {"status": "ok", "camera_index": index}
 
 
+@router.api_route("/pause_camera", methods=["GET", "POST"], summary="Release backend camera for browser access", tags=["Computer Vision"])
+async def pause_camera():
+    """Releases backend hardware webcam lock so browser WebRTC can access camera."""
+    video_stream_service.pause()
+    return {"status": "paused", "message": "Backend webcam released successfully."}
+
+
+@router.api_route("/resume_camera", methods=["GET", "POST"], summary="Resume backend camera capture", tags=["Computer Vision"])
+async def resume_camera():
+    """Resumes backend hardware webcam capture."""
+    video_stream_service.resume()
+    return {"status": "resumed", "message": "Backend webcam capture resumed."}
+
+
 @router.get(
     "/health",
     response_model=HealthResponse,

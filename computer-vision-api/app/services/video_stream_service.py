@@ -25,6 +25,7 @@ class VideoStreamService:
         self._lock = threading.Lock()
         self._thread: Optional[threading.Thread] = None
         self._running = False
+        self._paused = False
         self._last_inference_ms = 12.0
         self._need_reconnect = False
         self.start()
@@ -42,6 +43,19 @@ class VideoStreamService:
         self._running = False
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=1.0)
+
+    def pause(self):
+        """Pauses backend camera capture and releases hardware device."""
+        with self._lock:
+            self._paused = True
+            logger.info("Paused backend camera capture and released hardware camera.")
+
+    def resume(self):
+        """Resumes background camera capture."""
+        with self._lock:
+            self._paused = False
+            self._need_reconnect = True
+            logger.info("Resuming backend camera capture.")
 
     def set_camera_index(self, index: int):
         """Switches preferred camera index."""
@@ -79,12 +93,25 @@ class VideoStreamService:
         cap: Optional[cv2.VideoCapture] = None
 
         while self._running:
+            is_paused = False
             with self._lock:
-                if self._need_reconnect:
+                if self._paused:
+                    if cap is not None:
+                        cap.release()
+                        cap = None
+                        self.camera_active = False
+                        self._latest_jpeg_bytes = self._draw_connecting_frame("CAMERA PAUSED (BROWSER WEBCAM ACTIVE)")
+                    is_paused = True
+
+                if not is_paused and self._need_reconnect:
                     if cap is not None:
                         cap.release()
                         cap = None
                     self._need_reconnect = False
+
+            if is_paused:
+                time.sleep(0.3)
+                continue
 
             if cap is None or not cap.isOpened():
                 cap = self._open_camera()
@@ -265,7 +292,7 @@ class VideoStreamService:
         with self._lock:
             return self._latest_jpeg_bytes
 
-    def _draw_connecting_frame(self) -> bytes:
+    def _draw_connecting_frame(self, message: str = "CONNECTING CAMERA...") -> bytes:
         """Generates fallback connecting graphic."""
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
         frame[:] = (15, 23, 42)
@@ -275,8 +302,8 @@ class VideoStreamService:
             cv2.line(frame, (0, y), (self.width, y), (30, 41, 59), 1)
         cx, cy = self.width // 2, self.height // 2
         cv2.circle(frame, (cx, cy), 30, (6, 182, 212), 1)
-        cv2.rectangle(frame, (10, 10), (350, 65), (0, 0, 0), -1)
-        cv2.putText(frame, "CONNECTING CAMERA...", (20, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 255), 2, cv2.LINE_AA)
+        cv2.rectangle(frame, (10, 10), (480, 65), (0, 0, 0), -1)
+        cv2.putText(frame, message, (20, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.60, (0, 255, 255), 2, cv2.LINE_AA)
         ret, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
         return buffer.tobytes() if ret else b""
 

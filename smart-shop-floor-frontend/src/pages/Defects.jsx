@@ -131,6 +131,16 @@ export default function Defects() {
     if (feedMode === 'browser') {
       async function startBrowserCamera() {
         try {
+          // Pause backend OpenCV capture so Windows releases the hardware device lock
+          if (API_BASE) {
+            try {
+              await fetch(`${API_BASE}/pause_camera`, { method: 'POST' });
+              await new Promise((r) => setTimeout(r, 400));
+            } catch (e) {
+              console.debug('Could not signal backend pause:', e);
+            }
+          }
+
           const stream = await navigator.mediaDevices.getUserMedia({
             video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
             audio: false,
@@ -195,8 +205,16 @@ export default function Defects() {
           }, 1200);
         } catch (err) {
           console.error('Failed to open browser webcam:', err);
-          setFeedback('Camera permission denied or camera in use.');
+          const isLocked = err.name === 'NotReadableError';
+          setFeedback(
+            isLocked
+              ? 'Webcam is locked by another application. Using OpenCV Backend Stream.'
+              : 'Camera permission denied. Using OpenCV Backend Stream.'
+          );
           setFeedMode('backend');
+          if (API_BASE) {
+            fetch(`${API_BASE}/resume_camera`, { method: 'POST' }).catch(() => {});
+          }
         }
       }
       startBrowserCamera();
@@ -206,12 +224,18 @@ export default function Defects() {
         localStreamTrackRef.current = null;
       }
       setLocalStreamActive(false);
+      if (API_BASE) {
+        fetch(`${API_BASE}/resume_camera`, { method: 'POST' }).catch(() => {});
+      }
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
       if (localStreamTrackRef.current) {
         localStreamTrackRef.current.getTracks().forEach((t) => t.stop());
+      }
+      if (API_BASE) {
+        fetch(`${API_BASE}/resume_camera`, { method: 'POST' }).catch(() => {});
       }
     };
   }, [feedMode]);

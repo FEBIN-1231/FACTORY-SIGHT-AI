@@ -43,16 +43,17 @@ export default function MachineViewer3D({
 }) {
   const [autoRotate, setAutoRotate] = useState(true);
   const [selectedSensor, setSelectedSensor] = useState(null);
+  const [contextLost, setContextLost] = useState(false);
   const controlsRef = useRef();
 
   // If system/browser cannot or should not render 3D
-  if (!canRender3D()) {
+  if (!canRender3D() || contextLost) {
     return (
       <CanvasFallback
         machineId={machineId}
         status={status}
         telemetry={telemetry}
-        message="Reduced-motion active or WebGL disabled."
+        message={contextLost ? 'WebGL context reset. Displaying 2D twin.' : 'Reduced-motion active or WebGL disabled.'}
       />
     );
   }
@@ -118,19 +119,30 @@ export default function MachineViewer3D({
         {/* Three.js Canvas */}
         <Suspense fallback={<CanvasFallback machineId={machineId} status={status} telemetry={telemetry} message="Loading 3D Engine..." />}>
           <Canvas
-            shadows
+            shadows={false}
             camera={{ position: [3.2, 2.2, 3.8], fov: 42 }}
             dpr={[1, 1.5]}
             gl={{
               antialias: true,
               alpha: true,
-              powerPreference: 'high-performance',
+              powerPreference: 'default',
+            }}
+            onCreated={({ gl }) => {
+              if (gl?.domElement) {
+                gl.domElement.addEventListener('webglcontextlost', (e) => {
+                  e.preventDefault();
+                  setContextLost(true);
+                });
+                gl.domElement.addEventListener('webglcontextrestored', () => {
+                  setContextLost(false);
+                });
+              }
             }}
             className="w-full h-full cursor-grab active:cursor-grabbing"
           >
             {/* Lighting Setup */}
             <ambientLight intensity={0.75} />
-            <directionalLight position={[6, 8, 5]} intensity={1.4} castShadow shadow-mapSize={[512, 512]} />
+            <directionalLight position={[6, 8, 5]} intensity={1.4} />
             <directionalLight position={[-6, 4, -4]} intensity={0.5} color="#FE4B4A" />
             <pointLight position={[0, 2.5, 2]} intensity={0.6} color="#C41E23" />
 

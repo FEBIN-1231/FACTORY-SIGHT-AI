@@ -169,10 +169,13 @@ export const Logs = () => {
           <motion.button
             whileTap={buttonTap}
             onClick={handleExportCSV}
-            className={`px-3.5 py-2 font-semibold text-xs rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer font-mono ${
-              isExported
-                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-emerald-500/10 shadow-sm'
-                : 'bg-slate-800 hover:bg-slate-700 text-[var(--brand-accent)] border-slate-700 hover:border-[var(--brand-border)]'
+            disabled={!logs.length}
+            className={`px-3.5 py-2 font-semibold text-xs rounded-xl border transition-all flex items-center gap-1.5 font-mono ${
+              !logs.length
+                ? 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'
+                : isExported
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-emerald-500/10 shadow-sm cursor-pointer'
+                : 'bg-slate-800 hover:bg-slate-700 text-[var(--brand-accent)] border-slate-700 hover:border-[var(--brand-border)] cursor-pointer'
             }`}
           >
             {isExported ? (
@@ -225,6 +228,7 @@ export const Logs = () => {
               rows={logs}
               searchable={true}
               searchPlaceholder={`Search ${category} logs...`}
+              emptyMessage={`No ${category} log entries recorded.`}
             />
           )}
         </Card>

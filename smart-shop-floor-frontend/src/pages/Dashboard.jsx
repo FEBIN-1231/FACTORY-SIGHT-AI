@@ -43,6 +43,12 @@ export const Dashboard = () => {
       }
     };
     load();
+
+    const handleUpdate = () => {
+      load();
+    };
+    window.addEventListener('fs-analysis-updated', handleUpdate);
+    return () => window.removeEventListener('fs-analysis-updated', handleUpdate);
   }, []);
 
   if (loading) {
@@ -102,37 +108,37 @@ export const Dashboard = () => {
       >
         <MetricCard
           title="Overall OEE"
-          value={summary?.oee || 89.6}
+          value={summary?.oee ?? 0}
           unit="%"
           subtitle="Target: > 85.0%"
-          trend={summary?.oeeTrend || '+2.4%'}
+          trend={summary?.oeeTrend || '0%'}
           icon={Activity}
-          progress={89.6}
-          status="healthy"
+          progress={summary?.oee ?? 0}
+          status={summary?.oee > 0 ? 'healthy' : 'normal'}
         />
         <MetricCard
           title="Monitored Units"
-          value={summary?.activeMachines || 24}
-          unit={`/ ${summary?.totalMachines || 24}`}
-          subtitle="100% Ingestion Up-time"
-          trend="All Online"
+          value={summary?.activeMachines ?? 0}
+          unit={`/ ${summary?.totalMachines ?? 0}`}
+          subtitle={summary?.activeMachines > 0 ? "Ingestion Up-time Active" : "No Active Telemetry"}
+          trend={summary?.activeMachines > 0 ? "Online" : "Standby"}
           icon={Cpu}
           status="normal"
         />
         <MetricCard
           title="Defect Rate"
-          value={summary?.defectRate || 1.15}
+          value={summary?.defectRate ?? 0}
           unit="%"
           subtitle="Tolerance: < 2.0%"
-          trend={summary?.defectTrend || '-0.3%'}
+          trend={summary?.defectTrend || '0%'}
           icon={ScanEye}
-          status="healthy"
+          status="normal"
         />
         <MetricCard
           title="Active Alerts"
           value={alerts.filter((a) => !a.ack).length}
-          subtitle="1 High, 1 Moderate"
-          trend="Action Req."
+          subtitle={alerts.filter((a) => !a.ack).length === 0 ? "All streams nominal" : `${alerts.filter((a) => !a.ack && a.severity === 'HIGH').length} High, ${alerts.filter((a) => !a.ack && a.severity !== 'HIGH').length} Other`}
+          trend={alerts.filter((a) => !a.ack).length === 0 ? "Nominal" : "Action Req."}
           icon={AlertTriangle}
           status={alerts.some((a) => !a.ack && a.severity === 'HIGH') ? 'critical' : 'normal'}
         />
@@ -160,59 +166,65 @@ export const Dashboard = () => {
           animate="animate"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          {machines.map((m) => {
-            const isWarning = m.status === 'WARNING';
-            return (
-              <motion.div
-                key={m.id}
-                variants={cardEntrance}
-                whileHover={cardHoverLift}
-                className={`p-5 rounded-xl border bg-slate-850/90 transition-all duration-400 hover:shadow-lg hover:shadow-[var(--brand-glow)] hover:border-[var(--brand-border)] group cursor-default ${
-                  isWarning ? 'border-amber-500/40 bg-amber-950/10' : 'border-slate-800'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-xs font-mono font-bold text-white group-hover:text-[var(--brand-accent)] transition-colors">
-                      {m.id}
+          {machines.length === 0 ? (
+            <div className="col-span-full py-10 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-800 rounded-xl">
+              No industrial equipment units connected. Telemetry streams will appear once machines are initialized.
+            </div>
+          ) : (
+            machines.map((m) => {
+              const isWarning = m.status === 'WARNING';
+              return (
+                <motion.div
+                  key={m.id}
+                  variants={cardEntrance}
+                  whileHover={cardHoverLift}
+                  className={`p-5 rounded-xl border bg-slate-850/90 transition-all duration-400 hover:shadow-lg hover:shadow-[var(--brand-glow)] hover:border-[var(--brand-border)] group cursor-default ${
+                    isWarning ? 'border-amber-500/40 bg-amber-950/10' : 'border-slate-800'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="text-xs font-mono font-bold text-white group-hover:text-[var(--brand-accent)] transition-colors">
+                        {m.id}
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-200 mt-0.5">{m.name}</h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{m.line}</p>
+                    </div>
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border transition-colors duration-400 ${
+                        isWarning
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      }`}
+                    >
+                      {m.status}
                     </span>
-                    <h3 className="text-sm font-semibold text-slate-200 mt-0.5">{m.name}</h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{m.line}</p>
                   </div>
-                  <span
-                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border transition-colors duration-400 ${
-                      isWarning
-                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    }`}
-                  >
-                    {m.status}
-                  </span>
-                </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-750 text-xs font-mono">
-                  <div>
-                    <span className="text-slate-400 text-[10px] block">Vibration</span>
-                    <span className="text-slate-200 font-bold">{m.vibration}</span>
+                  <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-750 text-xs font-mono">
+                    <div>
+                      <span className="text-slate-400 text-[10px] block">Vibration</span>
+                      <span className="text-slate-200 font-bold">{m.vibration}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 text-[10px] block">Bearing Temp</span>
+                      <span className="text-slate-200 font-bold">{m.temp}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 text-[10px] block">Hydr. Pressure</span>
+                      <span className="text-slate-200 font-bold">{m.pressure}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 text-[10px] block">Health Score</span>
+                      <span className={`font-bold transition-colors duration-400 ${m.health >= 90 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {m.health}%
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400 text-[10px] block">Bearing Temp</span>
-                    <span className="text-slate-200 font-bold">{m.temp}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 text-[10px] block">Hydr. Pressure</span>
-                    <span className="text-slate-200 font-bold">{m.pressure}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 text-[10px] block">Health Score</span>
-                    <span className={`font-bold transition-colors duration-400 ${m.health >= 90 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                      {m.health}%
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                </motion.div>
+              );
+            })
+          )}
         </motion.div>
       </motion.div>
 
@@ -236,41 +248,47 @@ export const Dashboard = () => {
           }
         >
           <div className="space-y-3 pt-1">
-            {defects.slice(0, 3).map((def) => (
-              <motion.div
-                key={def.id}
-                whileHover={{ x: 3 }}
-                transition={{ duration: 0.15 }}
-                className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-3 hover:border-slate-700 transition-colors cursor-default"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-slate-950">
-                    <img src={def.imageUrl} alt="" className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white">{def.defectType}</span>
-                      <span className="text-[10px] font-mono text-[var(--brand-accent)] bg-[var(--brand-subtle)] px-1.5 rounded">
-                        {def.confidence}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                      <span>{def.machine}</span> • <span>{def.camera}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <span
-                  className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
-                    def.severity === 'High'
-                      ? 'bg-red-500/15 text-red-400 border-red-500/30'
-                      : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                  }`}
+            {defects.length === 0 ? (
+              <div className="py-8 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-800 rounded-xl">
+                No defect anomalies detected. Awaiting live camera stream or inspection image.
+              </div>
+            ) : (
+              defects.slice(0, 3).map((def) => (
+                <motion.div
+                  key={def.id}
+                  whileHover={{ x: 3 }}
+                  transition={{ duration: 0.15 }}
+                  className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-3 hover:border-slate-700 transition-colors cursor-default"
                 >
-                  {def.severity}
-                </span>
-              </motion.div>
-            ))}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-slate-950">
+                      <img src={def.imageUrl} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white">{def.defectType}</span>
+                        <span className="text-[10px] font-mono text-[var(--brand-accent)] bg-[var(--brand-subtle)] px-1.5 rounded">
+                          {def.confidence}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                        <span>{def.machine}</span> • <span>{def.camera}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
+                      def.severity === 'High'
+                        ? 'bg-red-500/15 text-red-400 border-red-500/30'
+                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                    }`}
+                  >
+                    {def.severity}
+                  </span>
+                </motion.div>
+              ))
+            )}
           </div>
         </Card>
 
@@ -286,32 +304,38 @@ export const Dashboard = () => {
           }
         >
           <div className="space-y-3 pt-1">
-            {alerts.map((alt) => (
-              <motion.div
-                key={alt.id}
-                whileHover={{ x: 3 }}
-                transition={{ duration: 0.15 }}
-                className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start justify-between gap-3 hover:border-slate-700 transition-colors cursor-default"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-slate-100">{alt.machine}</span>
-                    <span className="text-[10px] text-slate-500 font-mono">{alt.timestamp}</span>
-                  </div>
-                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">{alt.message}</p>
-                </div>
-
-                <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded shrink-0 uppercase border ${
-                    alt.severity === 'HIGH'
-                      ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                      : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                  }`}
+            {alerts.length === 0 ? (
+              <div className="py-8 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-800 rounded-xl">
+                No active alerts or threshold breaches recorded.
+              </div>
+            ) : (
+              alerts.map((alt) => (
+                <motion.div
+                  key={alt.id}
+                  whileHover={{ x: 3 }}
+                  transition={{ duration: 0.15 }}
+                  className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 flex items-start justify-between gap-3 hover:border-slate-700 transition-colors cursor-default"
                 >
-                  {alt.severity}
-                </span>
-              </motion.div>
-            ))}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-slate-100">{alt.machine}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">{alt.timestamp}</span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">{alt.message}</p>
+                  </div>
+
+                  <span
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded shrink-0 uppercase border ${
+                      alt.severity === 'HIGH'
+                        ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                        : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                    }`}
+                  >
+                    {alt.severity}
+                  </span>
+                </motion.div>
+              ))
+            )}
           </div>
         </Card>
       </motion.div>

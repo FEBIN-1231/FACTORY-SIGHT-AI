@@ -6,6 +6,7 @@ import Table from '../components/Table';
 import LineChart from '../components/LineChart';
 import AnimatedCheckmark from '../components/AnimatedCheckmark';
 import { SkeletonGrid } from '../components/SkeletonLoader';
+import AnalyzeMachineCard from '../components/AnalyzeMachineCard';
 import { getPredictions } from '../services/api';
 import {
   AlertCircle,
@@ -46,6 +47,14 @@ export const PredictiveMaintenance = () => {
       }
     };
     fetchPreds();
+
+    const handleUpdate = (e) => {
+      if (e.detail) {
+        handleAnalysisComplete(e.detail);
+      }
+    };
+    window.addEventListener('fs-analysis-updated', handleUpdate);
+    return () => window.removeEventListener('fs-analysis-updated', handleUpdate);
   }, []);
 
   const handleDispatch = (predId, machine) => {
@@ -59,16 +68,48 @@ export const PredictiveMaintenance = () => {
     }, 6000);
   };
 
+  const handleAnalysisComplete = (snsData) => {
+    if (!snsData) return;
+    const mId = snsData.machine_id;
+    const riskScore = snsData.failure_percentage ?? snsData.failureRisk ?? 50;
+    const riskLevel = (snsData.risk_level || snsData.status || 'MODERATE').toUpperCase();
+
+    setPredictions((prev) => {
+      const idx = prev.findIndex((p) => p.machine === mId);
+      const updatedItem = {
+        id: idx >= 0 ? prev[idx].id : `PRD-${Date.now().toString().slice(-4)}`,
+        machine: mId,
+        name: idx >= 0 ? prev[idx].name : `Equipment Unit ${mId}`,
+        riskScore,
+        riskLevel,
+        status: (riskLevel === 'CRITICAL' || riskLevel === 'HIGH') ? 'Action Required' : 'Healthy',
+        component: snsData.root_cause || snsData.failureType || 'Bearing Pack & Spindle Rotor',
+        recommendation: `${snsData.maintenance_urgency || snsData.maintenanceUrgency || 'Scheduled Check'}: ${snsData.recommended_action || snsData.root_cause || ''}`,
+        confidence: '98.5% (SNS Workflow)',
+        rulDays: riskLevel === 'CRITICAL' ? 4 : riskLevel === 'HIGH' ? 14 : 45,
+        rulHours: riskLevel === 'CRITICAL' ? 96 : riskLevel === 'HIGH' ? 336 : 1080,
+      };
+
+      if (idx === -1) {
+        return [updatedItem, ...prev];
+      }
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], ...updatedItem };
+      return updated;
+    });
+    setSelectedMachine(mId);
+  };
+
   const activePred = predictions.find((p) => p.machine === selectedMachine) || predictions[0] || {
-    machine: 'M-03',
-    name: 'Laser Scribing Unit C',
-    riskLevel: 'HIGH',
-    riskScore: 88,
-    rulDays: 4,
-    rulHours: 96,
-    confidence: '94.2%',
-    component: 'Spindle Intake Bearing',
-    recommendation: 'Inspect bearing lubrication and replace seal kit during scheduled changeover.',
+    machine: selectedMachine || 'M-01',
+    name: 'Industrial Unit',
+    riskLevel: 'NOMINAL',
+    riskScore: 0,
+    rulDays: 0,
+    rulHours: 0,
+    confidence: 'N/A',
+    component: 'No active degradation flagged',
+    recommendation: 'All equipment parameters within nominal limits. No maintenance intervention required.',
   };
 
   const isHighRisk = (activePred.riskScore || 0) >= 70;
@@ -76,23 +117,23 @@ export const PredictiveMaintenance = () => {
   const riskStatus = isHighRisk ? 'CRITICAL' : isModRisk ? 'WARNING' : 'NORMAL';
 
   // Degradation trajectory over past hours + forecast
-  const degradationHistory = [
+  const degradationHistory = predictions.length > 0 ? [
     { time: 'T-12h', probability: Math.max(5, (activePred.riskScore || 50) - 38) },
     { time: 'T-10h', probability: Math.max(8, (activePred.riskScore || 50) - 30) },
     { time: 'T-08h', probability: Math.max(12, (activePred.riskScore || 50) - 24) },
     { time: 'T-06h', probability: Math.max(18, (activePred.riskScore || 50) - 18) },
     { time: 'T-04h', probability: Math.max(25, (activePred.riskScore || 50) - 10) },
     { time: 'T-02h', probability: Math.max(30, (activePred.riskScore || 50) - 4) },
-    { time: 'Now', probability: activePred.riskScore || 50 },
-    { time: '+4h (Proj)', probability: Math.min(99, (activePred.riskScore || 50) + 6) },
-    { time: '+8h (Proj)', probability: Math.min(100, (activePred.riskScore || 50) + 11) },
-  ];
+    { time: 'Now', probability: activePred.riskScore || 0 },
+    { time: '+4h (Proj)', probability: Math.min(99, (activePred.riskScore || 0) + 6) },
+    { time: '+8h (Proj)', probability: Math.min(100, (activePred.riskScore || 0) + 11) },
+  ] : [];
 
   // Specific risk drivers for the focused unit
   const riskDrivers = [
     {
       label: 'Thermal Excursion Index',
-      impact: selectedMachine === 'M-03' ? 88 : selectedMachine === 'M-01' ? 42 : 22,
+      impact: activePred.riskScore > 0 ? Math.min(100, Math.round(activePred.riskScore * 0.9)) : 0,
       limit: '85°C Max',
       icon: Flame,
       color: 'text-amber-400',
@@ -100,7 +141,7 @@ export const PredictiveMaintenance = () => {
     },
     {
       label: 'Harmonic Spindle Vibration',
-      impact: selectedMachine === 'M-03' ? 76 : selectedMachine === 'M-02' ? 58 : 18,
+      impact: activePred.riskScore > 0 ? Math.min(100, Math.round(activePred.riskScore * 0.8)) : 0,
       limit: '4.5 mm/s',
       icon: Activity,
       color: 'text-[var(--brand-accent)]',
@@ -108,7 +149,7 @@ export const PredictiveMaintenance = () => {
     },
     {
       label: 'Hydraulic Pressure Delta',
-      impact: selectedMachine === 'M-04' ? 65 : selectedMachine === 'M-03' ? 54 : 15,
+      impact: activePred.riskScore > 0 ? Math.min(100, Math.round(activePred.riskScore * 0.6)) : 0,
       limit: '120 bar',
       icon: Gauge,
       color: 'text-blue-400',
@@ -116,7 +157,7 @@ export const PredictiveMaintenance = () => {
     },
     {
       label: 'Acoustic Friction Spectrum',
-      impact: selectedMachine === 'M-03' ? 48 : 20,
+      impact: activePred.riskScore > 0 ? Math.min(100, Math.round(activePred.riskScore * 0.5)) : 0,
       limit: '75 dB',
       icon: Volume2,
       color: 'text-purple-400',
@@ -286,6 +327,18 @@ export const PredictiveMaintenance = () => {
         )}
       </AnimatePresence>
 
+      {/* Interactive SNS Diagnostic Workbench (5-Stage Chained Pipeline) */}
+      <motion.div
+        variants={sequenceSection(0.05)}
+        initial="initial"
+        animate="animate"
+      >
+        <AnalyzeMachineCard
+          selectedMachine={selectedMachine}
+          onAnalysisComplete={handleAnalysisComplete}
+        />
+      </motion.div>
+
       {/* 2D Failure Probability & Risk Health Panel */}
       <motion.div
         variants={sequenceSection(0.1)}
@@ -437,25 +490,25 @@ export const PredictiveMaintenance = () => {
       >
         <MetricCard
           title="Average Fleet RUL"
-          value="35.7 Days"
-          subtitle="Across 4 active machining cells"
-          trend="Stable"
+          value={predictions.length > 0 ? `${(predictions.reduce((acc, p) => acc + (p.rulDays || 0), 0) / predictions.length).toFixed(1)} Days` : '0 Days'}
+          subtitle={predictions.length > 0 ? `Across ${predictions.length} monitored units` : 'No active prognostics warnings'}
+          trend={predictions.length > 0 ? 'Active' : 'Nominal'}
           icon={Clock}
           status="healthy"
         />
         <MetricCard
           title="Critical Unit Flag"
-          value="Unit M-03 (4d)"
-          subtitle="Intake seal degradation"
-          trend="High Priority"
+          value={predictions.find((p) => p.riskScore >= 70)?.machine || 'None'}
+          subtitle={predictions.some((p) => p.riskScore >= 70) ? 'Requires urgent inspection' : '0 critical degradation alerts'}
+          trend={predictions.some((p) => p.riskScore >= 70) ? 'High Priority' : 'Nominal'}
           icon={AlertCircle}
-          status="critical"
+          status={predictions.some((p) => p.riskScore >= 70) ? 'critical' : 'healthy'}
         />
         <MetricCard
           title="Prevented Downtime"
-          value="~42.5 Hours"
-          subtitle="Estimated $186,000 saved this quarter"
-          trend="+18% YoY"
+          value="0 Hours"
+          subtitle="Tracking active preventive work orders"
+          trend="Nominal"
           icon={ShieldCheck}
           status="healthy"
         />
@@ -473,7 +526,7 @@ export const PredictiveMaintenance = () => {
           variant="accent"
           enableHoverLift={true}
         >
-          <Table columns={columns} rows={predictions} />
+          <Table columns={columns} rows={predictions} emptyMessage="No predictive maintenance warnings generated. Equipment operating normally." />
         </Card>
       </motion.div>
     </div>

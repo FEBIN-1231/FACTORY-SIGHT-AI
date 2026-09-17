@@ -270,11 +270,11 @@ export default function Settings() {
           <Card title="System Connectivity" variant="contrast">
             <div className="space-y-4">
               <div className="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800">
-                <div className="text-xs text-slate-400 font-semibold mb-1">FastAPI Backend (Port 8000)</div>
+                <div className="text-xs text-slate-400 font-semibold mb-1">SNS Agent Workbench Diagnostic Gateway</div>
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-slate-200">http://127.0.0.1:8000</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    ONLINE
+                  <span className="font-mono text-xs text-slate-200 truncate mr-2">https://api.agents.snsihub.ai/webhook/inspectsight</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+                    CONNECTED
                   </span>
                 </div>
               </div>

@@ -311,24 +311,24 @@ export const Alerts = () => {
         <MetricCard
           title="Pending Sign-Off"
           value={alerts.filter((a) => !a.ack).length}
-          subtitle="Requires operator acknowledgment"
-          trend="Action Required"
+          subtitle={alerts.filter((a) => !a.ack).length === 0 ? "All items acknowledged" : "Requires operator acknowledgment"}
+          trend={alerts.filter((a) => !a.ack).length === 0 ? "Nominal" : "Action Required"}
           icon={AlertTriangle}
-          status="warning"
+          status={alerts.filter((a) => !a.ack).length === 0 ? "healthy" : "warning"}
         />
         <MetricCard
           title="Critical Incidents (Level 3)"
           value={alerts.filter((a) => a.severity === 'HIGH').length}
-          subtitle="Coolant, bearing & safety stops"
-          trend="High Priority"
+          subtitle={alerts.filter((a) => a.severity === 'HIGH').length === 0 ? "0 critical safety breaches" : "Coolant, bearing & safety stops"}
+          trend={alerts.filter((a) => a.severity === 'HIGH').length === 0 ? "Nominal" : "High Priority"}
           icon={ShieldAlert}
-          status="critical"
+          status={alerts.filter((a) => a.severity === 'HIGH').length === 0 ? "healthy" : "critical"}
         />
         <MetricCard
           title="Directives Issued"
           value={alerts.filter((a) => a.type === 'ADMIN_DISPATCH').length}
-          subtitle="Admin safety broadcasts active"
-          trend="Supervised"
+          subtitle={alerts.filter((a) => a.type === 'ADMIN_DISPATCH').length === 0 ? "0 active admin broadcasts" : "Admin safety broadcasts active"}
+          trend={alerts.filter((a) => a.type === 'ADMIN_DISPATCH').length === 0 ? "Nominal" : "Supervised"}
           icon={BellRing}
           status="healthy"
         />
@@ -404,7 +404,7 @@ export const Alerts = () => {
           subtitle="Showing all automated machine threshold breaches and administrator directives in one unified roster"
           enableHoverLift={true}
         >
-          <Table columns={columns} rows={filteredAlerts} />
+          <Table columns={columns} rows={filteredAlerts} emptyMessage="No alert incidents recorded. All machine telemetry nominal." />
         </Card>
       </motion.div>
 

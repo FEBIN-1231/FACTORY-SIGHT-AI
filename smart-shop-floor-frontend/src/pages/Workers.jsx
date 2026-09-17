@@ -79,12 +79,12 @@ export default function Workers() {
       name: '',
       title: 'Machine Operator',
       role: 'Operator',
-      assignedMachine: 'M-01 (Milling Station)',
+      assignedMachine: '',
       status: 'ACTIVE',
       shift: 'Shift 1 (06:00 - 14:00)',
       contact: '',
       radio: 'CH-01',
-      certifications: 'Safety OSHA 10',
+      certifications: '',
     });
     setIsModalOpen(true);
   };
@@ -335,7 +335,7 @@ export default function Workers() {
           <div>
             <span className="text-[10px] font-mono text-slate-400 uppercase">Stations Monitored</span>
             <div className="text-2xl font-bold font-mono text-white mt-0.5">
-              4 / 4 Units
+              {new Set(workers.map((w) => w.assignedMachine).filter(Boolean)).size} Units
             </div>
           </div>
           <div className="w-9 h-9 rounded-lg bg-[var(--brand-subtle)] border border-[var(--brand-border)] text-[var(--brand-accent)] flex items-center justify-center">

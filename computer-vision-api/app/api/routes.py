@@ -366,3 +366,76 @@ async def detect_defects(
     )
 
     return detection_result
+
+
+@router.get(
+    "/api/telemetry/{machine_id}",
+    summary="Get telemetry data for a specific machine",
+    tags=["Telemetry"]
+)
+async def get_machine_telemetry(machine_id: str = "M-01"):
+    """Returns telemetry data for the specified machine identifier."""
+    import time, math, random
+    from datetime import datetime, timedelta
+
+    clean_id = validate_machine_id(machine_id)
+    now = datetime.now()
+    epoch = time.time()
+
+    # Machine-specific base profiles
+    profiles = {
+        "M-01": {"vibe": 2.14, "temp": 71.5, "press": 118.0, "rpm": 1850.0, "acoust": 62.4, "power": 14.2, "status": "NOMINAL"},
+        "M-02": {"vibe": 2.85, "temp": 68.2, "press": 110.0, "rpm": 1750.0, "acoust": 65.1, "power": 12.8, "status": "NOMINAL"},
+        "M-03": {"vibe": 3.92, "temp": 82.6, "press": 124.0, "rpm": 2180.0, "acoust": 74.5, "power": 18.6, "status": "WARNING"},
+        "M-04": {"vibe": 1.72, "temp": 64.0, "press": 108.0, "rpm": 1400.0, "acoust": 58.0, "power": 9.5, "status": "NOMINAL"},
+    }
+    base = profiles.get(clean_id, profiles["M-01"])
+
+    # Dynamic sinusoidal oscillation with slight jitter
+    sine_val = math.sin(epoch / 6.0)
+    cos_val = math.cos(epoch / 4.5)
+    jitter = (random.random() - 0.5) * 0.1
+
+    curr_vibe = round(max(0.2, base["vibe"] + sine_val * 0.25 + jitter), 2)
+    curr_temp = round(max(20.0, base["temp"] + cos_val * 1.5 + jitter * 2), 1)
+    curr_press = round(max(50.0, base["press"] + sine_val * 3.0), 1)
+    curr_rpm = round(max(100.0, base["rpm"] + cos_val * 45.0))
+    curr_acoust = round(max(30.0, base["acoust"] + sine_val * 2.0), 1)
+    curr_power = round(max(2.0, base["power"] + cos_val * 0.8), 1)
+
+    # 25 timestamped sliding-window historical points
+    history = []
+    for i in range(25, -1, -1):
+        pt_time = now - timedelta(seconds=i * 2)
+        pt_epoch = epoch - (i * 2)
+        pt_sine = math.sin(pt_epoch / 6.0)
+        pt_cos = math.cos(pt_epoch / 4.5)
+        history.append({
+            "time": pt_time.strftime("%H:%M:%S"),
+            "vibration": round(max(0.2, base["vibe"] + pt_sine * 0.25), 2),
+            "temperature": round(max(20.0, base["temp"] + pt_cos * 1.5), 1),
+            "pressure": round(max(50.0, base["press"] + pt_sine * 3.0), 1),
+            "rpm": round(max(100.0, base["rpm"] + pt_cos * 45.0)),
+            "acoustic": round(max(30.0, base["acoust"] + pt_sine * 2.0), 1),
+            "power": round(max(2.0, base["power"] + pt_cos * 0.8), 1),
+        })
+
+    return {
+        "machineId": clean_id,
+        "status": base["status"],
+        "metrics": {
+            "vibration": curr_vibe,
+            "temperature": curr_temp,
+            "pressure": curr_press,
+            "rpm": curr_rpm,
+            "acoustic": curr_acoust,
+            "power": curr_power,
+        },
+        "thresholds": {
+            "vibrationLimit": 4.5,
+            "temperatureLimit": 85.0,
+            "pressureLimit": 120.0,
+            "rpmLimit": 2200.0,
+        },
+        "history": history,
+    }

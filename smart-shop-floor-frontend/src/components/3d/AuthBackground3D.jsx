@@ -40,14 +40,15 @@ function ParticleNodes() {
     };
   }, []);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
+    const elapsed = performance.now() * 0.001;
     if (pointsRef.current) {
       pointsRef.current.rotation.y += delta * 0.04;
-      pointsRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.2) * 0.08;
+      pointsRef.current.rotation.x = Math.sin(elapsed * 0.2) * 0.08;
     }
     if (linesRef.current) {
       linesRef.current.rotation.y += delta * 0.04;
-      linesRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.2) * 0.08;
+      linesRef.current.rotation.x = Math.sin(elapsed * 0.2) * 0.08;
     }
   });
 

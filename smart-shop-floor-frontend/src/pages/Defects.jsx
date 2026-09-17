@@ -30,10 +30,12 @@ import {
   staggerContainer,
 } from '../components/motion';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
-const CV_DETECT_STATUS_URL = `${API_BASE}/detect_status`;
-const CV_FEED_URL = `${API_BASE}/video_feed`;
-const CV_DETECT_UPLOAD_URL = `${API_BASE}/detect`;
+const rawBase = import.meta.env.VITE_API_BASE_URL;
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const API_BASE = rawBase || (isLocal || import.meta.env.DEV ? 'http://127.0.0.1:8000' : '');
+const CV_DETECT_STATUS_URL = API_BASE ? `${API_BASE}/detect_status` : null;
+const CV_FEED_URL = API_BASE ? `${API_BASE}/video_feed` : null;
+const CV_DETECT_UPLOAD_URL = API_BASE ? `${API_BASE}/detect` : null;
 
 export default function Defects() {
   const [defects, setDefects] = useState([]);
@@ -65,9 +67,13 @@ export default function Defects() {
     model: 'YOLOv8 defect_best.pt',
   });
 
-  // Real-time Computer Vision polling (1000ms interval) directly from CV endpoint
+  // Real-time Computer Vision polling directly from CV endpoint when configured
   useEffect(() => {
     async function fetchDefects() {
+      if (!CV_DETECT_STATUS_URL) {
+        setLoading(false);
+        return;
+      }
       try {
         let response = await fetch(CV_DETECT_STATUS_URL);
         let data = await response.json();
@@ -109,9 +115,13 @@ export default function Defects() {
       }
     }
 
-    fetchDefects();
-    const interval = setInterval(fetchDefects, 1000);
-    return () => clearInterval(interval);
+    if (CV_DETECT_STATUS_URL) {
+      fetchDefects();
+      const interval = setInterval(fetchDefects, 1500);
+      return () => clearInterval(interval);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   // Handle Browser Local Webcam toggle

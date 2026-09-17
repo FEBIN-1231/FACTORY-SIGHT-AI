@@ -2,8 +2,8 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Card from '../components/Card';
 import LineChart from '../components/LineChart';
-import { getTelemetry } from '../services/api';
-import { Activity, Gauge, Flame, Radio, Zap, Volume2, Play, Pause, Box, BarChart2 } from 'lucide-react';
+import { getTelemetry, analyzeMachine } from '../services/api';
+import { Activity, Gauge, Flame, Radio, Zap, Volume2, Play, Pause, Box, BarChart2, Cpu, CheckCircle2 } from 'lucide-react';
 import { buttonTap, tabPillTransition } from '../components/motion';
 
 const MachineViewer3D = lazy(() => import('../components/3d/MachineViewer3D'));
@@ -14,6 +14,34 @@ export const Telemetry = () => {
   const [selectedMetric, setSelectedMetric] = useState('vibration');
   const [isStreaming, setIsStreaming] = useState(true);
   const [viewMode, setViewMode] = useState('both'); // 'chart' | '3d' | 'both'
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisFeedback, setAnalysisFeedback] = useState(null);
+
+  const handleAnalyzeCurrentTelemetry = async () => {
+    setAnalyzing(true);
+    setAnalysisFeedback(null);
+    try {
+      const result = await analyzeMachine({
+        machine_id: machineId,
+        temperature: telemetry?.metrics?.temperature ?? 87.5,
+        vibration: telemetry?.metrics?.vibration ?? 8.2,
+        current: telemetry?.metrics?.power ? Number((telemetry.metrics.power / 2).toFixed(1)) : 7.8,
+        rpm: telemetry?.metrics?.rpm ?? 1320,
+        load_percentage: telemetry?.metrics?.power ? Math.min(100, Math.round((telemetry.metrics.power / 20) * 100)) : 88,
+      });
+      setAnalysisFeedback({
+        type: 'success',
+        text: `SNS Analysis Complete: ${result.risk_level} (${result.failure_percentage}%) - ${result.maintenance_urgency}`,
+      });
+    } catch (err) {
+      setAnalysisFeedback({
+        type: 'error',
+        text: 'Unable to retrieve machine analysis. Please try again.',
+      });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -22,7 +50,7 @@ export const Telemetry = () => {
         const data = await getTelemetry(machineId, 25);
         if (isMounted) setTelemetry(data);
       } catch (e) {
-        console.error('Telemetry fetch error:', e);
+        // Fallback handled gracefully in api.js
       }
     };
 
@@ -131,8 +159,51 @@ export const Telemetry = () => {
               </>
             )}
           </motion.button>
+
+          {/* Analyze with SNS Workflow */}
+          <motion.button
+            whileTap={buttonTap}
+            onClick={handleAnalyzeCurrentTelemetry}
+            disabled={analyzing}
+            className={`px-3 py-2 text-xs font-bold rounded-xl border flex items-center gap-1.5 transition-colors cursor-pointer font-mono ${
+              analyzing
+                ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed'
+                : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-cyan-400/30 hover:shadow-md hover:shadow-cyan-500/20'
+            }`}
+          >
+            {analyzing ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Analyzing...</span>
+              </>
+            ) : (
+              <>
+                <Cpu className="w-3.5 h-3.5" />
+                <span>Analyze Machine</span>
+              </>
+            )}
+          </motion.button>
         </div>
       </div>
+
+      {/* Optional Analysis Feedback Banner */}
+      {analysisFeedback && (
+        <div
+          className={`p-3 rounded-xl border text-xs font-mono flex items-center justify-between transition-all ${
+            analysisFeedback.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : 'bg-red-500/10 border-red-500/30 text-red-300'
+          }`}
+        >
+          <span>{analysisFeedback.text}</span>
+          <button
+            onClick={() => setAnalysisFeedback(null)}
+            className="text-slate-400 hover:text-white text-[11px] ml-2 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Six Metric Cards with Sliding Active Ring */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

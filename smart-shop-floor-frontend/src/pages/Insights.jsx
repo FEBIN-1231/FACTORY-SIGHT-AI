@@ -103,27 +103,27 @@ export const Insights = () => {
       >
         <MetricCard
           title="Potential Cost Avoidance"
-          value="$20,900"
-          subtitle="Identified across 3 active diagnostics"
-          trend="Calculated"
+          value={insights.length > 0 ? `$${insights.length * 7000}` : "$0"}
+          subtitle={insights.length > 0 ? `Identified across ${insights.length} active diagnostics` : "No active loss risks detected"}
+          trend={insights.length > 0 ? "Calculated" : "Nominal"}
           icon={DollarSign}
-          status="healthy"
+          status={insights.length > 0 ? "healthy" : "normal"}
         />
         <MetricCard
           title="Thermal Correlation Index"
-          value="0.91 r"
-          subtitle="Strong coupling between temp & burrs"
-          trend="High Accuracy"
+          value={insights.length > 0 ? "0.91 r" : "0.00 r"}
+          subtitle={insights.length > 0 ? "Strong coupling between temp & burrs" : "No anomaly correlation flagged"}
+          trend={insights.length > 0 ? "High Accuracy" : "Nominal"}
           icon={Zap}
           status="normal"
         />
         <MetricCard
           title="Overall Health Impact"
-          value="+14.2%"
-          subtitle="OEE uplift upon corrective execution"
-          trend="Projected"
+          value={insights.length > 0 ? "+14.2%" : "0%"}
+          subtitle={insights.length > 0 ? "OEE uplift upon corrective execution" : "Operating at nominal baseline"}
+          trend={insights.length > 0 ? "Projected" : "Nominal"}
           icon={TrendingUp}
-          status="healthy"
+          status={insights.length > 0 ? "healthy" : "normal"}
         />
       </motion.div>
 
@@ -134,104 +134,110 @@ export const Insights = () => {
         animate="animate"
         className="space-y-4"
       >
-        {insights.map((item) => {
-          const isApplied = appliedMap[item.id];
-          return (
-            <motion.div
-              key={item.id}
-              variants={cardEntrance}
-              whileHover={cardHoverLift}
-              className={`p-6 rounded-2xl bg-slate-850 border transition-all duration-300 shadow-md space-y-4 ${
-                isApplied
-                  ? 'border-emerald-500/60 shadow-emerald-500/10 shadow-lg'
-                  : 'border-slate-750 hover:border-[var(--brand-border)] hover:shadow-[var(--brand-glow)] hover:shadow-lg'
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-750">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[var(--brand-subtle)] border border-[var(--brand-border)] text-[var(--brand-accent)] flex items-center justify-center font-bold">
-                    <Sparkles className="w-4 h-4" />
+        {insights.length === 0 ? (
+          <div className="py-12 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-800 rounded-2xl bg-slate-850/40">
+            No AI prescriptive recommendations or root cause diagnostics pending.
+          </div>
+        ) : (
+          insights.map((item) => {
+            const isApplied = appliedMap[item.id];
+            return (
+              <motion.div
+                key={item.id}
+                variants={cardEntrance}
+                whileHover={cardHoverLift}
+                className={`p-6 rounded-2xl bg-slate-850 border transition-all duration-300 shadow-md space-y-4 ${
+                  isApplied
+                    ? 'border-emerald-500/60 shadow-emerald-500/10 shadow-lg'
+                    : 'border-slate-750 hover:border-[var(--brand-border)] hover:shadow-[var(--brand-glow)] hover:shadow-lg'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-750">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[var(--brand-subtle)] border border-[var(--brand-border)] text-[var(--brand-accent)] flex items-center justify-center font-bold">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white tracking-tight">{item.title}</h3>
+                      <p className="text-[11px] text-slate-400 font-mono mt-0.5">{item.category}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white tracking-tight">{item.title}</h3>
-                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">{item.category}</p>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-[var(--brand-subtle)] text-[var(--brand-accent)] border border-[var(--brand-border)]">
+                      {item.confidence} Confidence
+                    </span>
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase border ${
+                        item.severity === 'High'
+                          ? 'bg-red-500/15 text-red-400 border-red-500/30'
+                          : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      }`}
+                    >
+                      {item.severity}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-[var(--brand-subtle)] text-[var(--brand-accent)] border border-[var(--brand-border)]">
-                    {item.confidence} Confidence
-                  </span>
-                  <span
-                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase border ${
-                      item.severity === 'High'
-                        ? 'bg-red-500/15 text-red-400 border-red-500/30'
-                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                {/* Root Cause & Recommendation Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
+                    <span className="text-[10px] font-mono uppercase font-bold text-red-400 block">
+                      Identified Root Cause
+                    </span>
+                    <p className="text-slate-300 leading-relaxed">{item.rootCause}</p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
+                    <span className="text-[10px] font-mono uppercase font-bold text-emerald-400 block">
+                      Prescribed Corrective Action
+                    </span>
+                    <p className="text-slate-300 leading-relaxed">{item.recommendation}</p>
+                  </div>
+                </div>
+
+                {/* Metrics & Action Footer */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 text-xs">
+                  <div className="flex items-center gap-4 text-slate-400 font-mono text-[11px] flex-wrap">
+                    <span>
+                      Target: <strong className="text-slate-200">{item.metrics.affectedUnit}</strong>
+                    </span>
+                    <span>•</span>
+                    <span>
+                      Failure Window: <strong className="text-amber-400">{item.metrics.failureWindow}</strong>
+                    </span>
+                    <span>•</span>
+                    <span>
+                      Savings: <strong className="text-emerald-400">{item.metrics.costSavings}</strong>
+                    </span>
+                  </div>
+
+                  <motion.button
+                    whileTap={buttonTap}
+                    onClick={() => handleApply(item.id, item.title)}
+                    className={`px-4 py-2 text-white font-semibold text-xs rounded-xl shadow-md shadow-[var(--brand-glow)] transition-all flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-auto ${
+                      isApplied
+                        ? 'bg-emerald-600/90 border border-emerald-400 shadow-emerald-500/20'
+                        : 'bg-[var(--brand-primary)] hover:bg-[var(--brand-accent)]'
                     }`}
                   >
-                    {item.severity}
-                  </span>
+                    {isApplied ? (
+                      <>
+                        <AnimatedCheckmark size={14} className="text-white" />
+                        <span>Applied to PLC</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Apply Recommendation</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </motion.button>
                 </div>
-              </div>
-
-              {/* Root Cause & Recommendation Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-mono uppercase font-bold text-red-400 block">
-                    Identified Root Cause
-                  </span>
-                  <p className="text-slate-300 leading-relaxed">{item.rootCause}</p>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-mono uppercase font-bold text-emerald-400 block">
-                    Prescribed Corrective Action
-                  </span>
-                  <p className="text-slate-300 leading-relaxed">{item.recommendation}</p>
-                </div>
-              </div>
-
-              {/* Metrics & Action Footer */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 text-xs">
-                <div className="flex items-center gap-4 text-slate-400 font-mono text-[11px] flex-wrap">
-                  <span>
-                    Target: <strong className="text-slate-200">{item.metrics.affectedUnit}</strong>
-                  </span>
-                  <span>•</span>
-                  <span>
-                    Failure Window: <strong className="text-amber-400">{item.metrics.failureWindow}</strong>
-                  </span>
-                  <span>•</span>
-                  <span>
-                    Savings: <strong className="text-emerald-400">{item.metrics.costSavings}</strong>
-                  </span>
-                </div>
-
-                <motion.button
-                  whileTap={buttonTap}
-                  onClick={() => handleApply(item.id, item.title)}
-                  className={`px-4 py-2 text-white font-semibold text-xs rounded-xl shadow-md shadow-[var(--brand-glow)] transition-all flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-auto ${
-                    isApplied
-                      ? 'bg-emerald-600/90 border border-emerald-400 shadow-emerald-500/20'
-                      : 'bg-[var(--brand-primary)] hover:bg-[var(--brand-accent)]'
-                  }`}
-                >
-                  {isApplied ? (
-                    <>
-                      <AnimatedCheckmark size={14} className="text-white" />
-                      <span>Applied to PLC</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Apply Recommendation</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </motion.button>
-              </div>
-            </motion.div>
-          );
-        })}
+              </motion.div>
+            );
+          })
+        )}
       </motion.div>
     </div>
   );

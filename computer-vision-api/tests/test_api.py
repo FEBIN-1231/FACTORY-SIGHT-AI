@@ -50,31 +50,36 @@ def test_detect_demo_mode_success():
     client = TestClient(app)
     img_bytes = create_test_image(format="JPEG", size=(640, 480))
     
-    response = client.post(
-        "/detect",
-        data={"machine_id": "M-03"},
-        files={"file": ("test_gear.jpg", img_bytes, "image/jpeg")}
-    )
-    assert response.status_code == 200
-    data = response.json()
+    orig_demo = settings.DEMO_MODE
+    try:
+        settings.DEMO_MODE = True
+        response = client.post(
+            "/detect",
+            data={"machine_id": "M-03"},
+            files={"file": ("test_gear.jpg", img_bytes, "image/jpeg")}
+        )
+        assert response.status_code == 200
+        data = response.json()
 
-    assert data["machine_id"] == "M-03"
-    assert data["inspection_status"] == "DEFECT_DETECTED"
-    assert data["defect_detected"] is True
-    assert data["highest_severity"] in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
-    assert data["total_defects"] > 0
-    assert len(data["defects"]) == data["total_defects"]
-    assert data["image_processed"] is True
-    assert "timestamp" in data
-    assert data["is_simulated"] is True
-    
-    # Check defect structure
-    first_defect = data["defects"][0]
-    assert "type" in first_defect
-    assert "confidence" in first_defect
-    assert "severity" in first_defect
-    assert "bounding_box" in first_defect
-    assert all(k in first_defect["bounding_box"] for k in ["x1", "y1", "x2", "y2"])
+        assert data["machine_id"] == "M-03"
+        assert data["inspection_status"] == "DEFECT_DETECTED"
+        assert data["defect_detected"] is True
+        assert data["highest_severity"] in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        assert data["total_defects"] > 0
+        assert len(data["defects"]) == data["total_defects"]
+        assert data["image_processed"] is True
+        assert "timestamp" in data
+        assert data["is_simulated"] is True
+        
+        # Check defect structure
+        first_defect = data["defects"][0]
+        assert "type" in first_defect
+        assert "confidence" in first_defect
+        assert "severity" in first_defect
+        assert "bounding_box" in first_defect
+        assert all(k in first_defect["bounding_box"] for k in ["x1", "y1", "x2", "y2"])
+    finally:
+        settings.DEMO_MODE = orig_demo
 
 
 def test_detect_invalid_file_extension():
@@ -149,10 +154,15 @@ def test_demo_mode_false_with_missing_model():
     from app.services.vision_service import vision_service
     client = TestClient(app)
     orig_demo = settings.DEMO_MODE
+    orig_det = vision_service.detect_model
+    orig_cls = vision_service.classify_model
     orig_model = vision_service.model
     orig_loaded = vision_service.model_loaded
+    orig_error = vision_service.load_error
     try:
         settings.DEMO_MODE = False
+        vision_service.detect_model = None
+        vision_service.classify_model = None
         vision_service.model = None
         vision_service.model_loaded = False
         vision_service.load_error = "Model weights file not found at 'models/best.pt'."
@@ -167,8 +177,11 @@ def test_demo_mode_false_with_missing_model():
         assert "unavailable" in response.json()["detail"].lower()
     finally:
         settings.DEMO_MODE = orig_demo
+        vision_service.detect_model = orig_det
+        vision_service.classify_model = orig_cls
         vision_service.model = orig_model
         vision_service.model_loaded = orig_loaded
+        vision_service.load_error = orig_error
 
 
 def test_sns_failure_does_not_break_detect():
@@ -177,7 +190,9 @@ def test_sns_failure_does_not_break_detect():
     orig_url = settings.SNS_WEBHOOK_URL
     orig_retries = settings.SNS_MAX_RETRIES
     orig_timeout = settings.SNS_TIMEOUT_SECONDS
+    orig_demo = settings.DEMO_MODE
     try:
+        settings.DEMO_MODE = True
         # Point to unreachable port/IP with 0 retries and low timeout for fast test
         settings.SNS_WEBHOOK_URL = "http://127.0.0.1:59999/webhook/fake"
         settings.SNS_MAX_RETRIES = 0
@@ -197,6 +212,7 @@ def test_sns_failure_does_not_break_detect():
         settings.SNS_WEBHOOK_URL = orig_url
         settings.SNS_MAX_RETRIES = orig_retries
         settings.SNS_TIMEOUT_SECONDS = orig_timeout
+        settings.DEMO_MODE = orig_demo
 
 
 def test_sns_retry_mechanism():
@@ -205,7 +221,9 @@ def test_sns_retry_mechanism():
     orig_url = settings.SNS_WEBHOOK_URL
     orig_retries = settings.SNS_MAX_RETRIES
     orig_timeout = settings.SNS_TIMEOUT_SECONDS
+    orig_demo = settings.DEMO_MODE
     try:
+        settings.DEMO_MODE = True
         # 2 retries on non-existent local port
         settings.SNS_WEBHOOK_URL = "http://127.0.0.1:59998/sns/test"
         settings.SNS_MAX_RETRIES = 2
@@ -224,6 +242,8 @@ def test_sns_retry_mechanism():
         settings.SNS_WEBHOOK_URL = orig_url
         settings.SNS_MAX_RETRIES = orig_retries
         settings.SNS_TIMEOUT_SECONDS = orig_timeout
+        settings.DEMO_MODE = orig_demo
+
 
 
 if __name__ == "__main__":

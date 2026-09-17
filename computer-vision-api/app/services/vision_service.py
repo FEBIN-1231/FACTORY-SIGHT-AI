@@ -136,6 +136,45 @@ class VisionService:
 
         return defects
 
+    def _simulate_detection(
+        self,
+        image_path: Path,
+        machine_id: str,
+        img_width: int,
+        img_height: int
+    ) -> DetectionResponse:
+        """Generates deterministic simulated defects for testing and demo environments."""
+        defects = [
+            DefectItem(
+                type="crack",
+                confidence=0.88,
+                severity=SeverityLevel.HIGH,
+                bounding_box=BoundingBox(
+                    x1=int(img_width * 0.2),
+                    y1=int(img_height * 0.2),
+                    x2=int(img_width * 0.6),
+                    y2=int(img_height * 0.6),
+                ),
+            )
+        ]
+        annotated_rel_path = None
+        if settings.SAVE_ANNOTATED_IMAGES:
+            saved_annotated = annotate_image(image_path, defects, settings.ANNOTATED_DIR)
+            annotated_rel_path = saved_annotated.relative_to(settings.BASE_DIR).as_posix()
+
+        return DetectionResponse(
+            machine_id=machine_id,
+            inspection_status=InspectionStatus.DEFECT_DETECTED,
+            defect_detected=True,
+            highest_severity=SeverityLevel.HIGH,
+            total_defects=len(defects),
+            defects=defects,
+            image_processed=True,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            is_simulated=True,
+            annotated_image_path=annotated_rel_path,
+        )
+
     def detect(
         self,
         image_path: Path,
@@ -144,9 +183,18 @@ class VisionService:
         img_height: int
     ) -> DetectionResponse:
         """
-        Executes defect detection strictly using the trained YOLO model.
+        Executes defect detection strictly using the trained YOLO model or simulated demo mode.
         Supports both YOLO classification models (probs) and object detection models (boxes).
         """
+        if settings.DEMO_MODE:
+            return self._simulate_detection(image_path, machine_id, img_width, img_height)
+
+        if not self.model_loaded and self.detect_model is None and self.classify_model is None and self.model is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Computer Vision model is unavailable: {self.load_error or 'Weights not loaded'}"
+            )
+
         defects: List[DefectItem] = []
 
         # 1. Run YOLO Object Detection (Bounding Boxes)

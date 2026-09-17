@@ -35,6 +35,38 @@ export const PredictiveMaintenance = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMachine, setSelectedMachine] = useState('M-03');
 
+  const handleAnalysisComplete = (snsData) => {
+    if (!snsData) return;
+    const mId = snsData.machine_id;
+    const riskScore = snsData.failure_percentage ?? snsData.failureRisk ?? 50;
+    const riskLevel = (snsData.risk_level || snsData.status || 'MODERATE').toUpperCase();
+
+    setPredictions((prev) => {
+      const idx = prev.findIndex((p) => p.machine === mId);
+      const updatedItem = {
+        id: idx >= 0 ? prev[idx].id : `PRD-${Date.now().toString().slice(-4)}`,
+        machine: mId,
+        name: idx >= 0 ? prev[idx].name : `Equipment Unit ${mId}`,
+        riskScore,
+        riskLevel,
+        status: (riskLevel === 'CRITICAL' || riskLevel === 'HIGH') ? 'Action Required' : 'Healthy',
+        component: snsData.root_cause || snsData.failureType || 'Bearing Pack & Spindle Rotor',
+        recommendation: `${snsData.maintenance_urgency || snsData.maintenanceUrgency || 'Scheduled Check'}: ${snsData.recommended_action || snsData.root_cause || ''}`,
+        confidence: '98.5% (SNS Workflow)',
+        rulDays: riskLevel === 'CRITICAL' ? 4 : riskLevel === 'HIGH' ? 14 : 45,
+        rulHours: riskLevel === 'CRITICAL' ? 96 : riskLevel === 'HIGH' ? 336 : 1080,
+      };
+
+      if (idx === -1) {
+        return [updatedItem, ...prev];
+      }
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], ...updatedItem };
+      return updated;
+    });
+    setSelectedMachine(mId);
+  };
+
   useEffect(() => {
     const fetchPreds = async () => {
       try {
@@ -66,38 +98,6 @@ export const PredictiveMaintenance = () => {
     setTimeout(() => {
       setDispatchedMap((prev) => ({ ...prev, [predId]: false }));
     }, 6000);
-  };
-
-  const handleAnalysisComplete = (snsData) => {
-    if (!snsData) return;
-    const mId = snsData.machine_id;
-    const riskScore = snsData.failure_percentage ?? snsData.failureRisk ?? 50;
-    const riskLevel = (snsData.risk_level || snsData.status || 'MODERATE').toUpperCase();
-
-    setPredictions((prev) => {
-      const idx = prev.findIndex((p) => p.machine === mId);
-      const updatedItem = {
-        id: idx >= 0 ? prev[idx].id : `PRD-${Date.now().toString().slice(-4)}`,
-        machine: mId,
-        name: idx >= 0 ? prev[idx].name : `Equipment Unit ${mId}`,
-        riskScore,
-        riskLevel,
-        status: (riskLevel === 'CRITICAL' || riskLevel === 'HIGH') ? 'Action Required' : 'Healthy',
-        component: snsData.root_cause || snsData.failureType || 'Bearing Pack & Spindle Rotor',
-        recommendation: `${snsData.maintenance_urgency || snsData.maintenanceUrgency || 'Scheduled Check'}: ${snsData.recommended_action || snsData.root_cause || ''}`,
-        confidence: '98.5% (SNS Workflow)',
-        rulDays: riskLevel === 'CRITICAL' ? 4 : riskLevel === 'HIGH' ? 14 : 45,
-        rulHours: riskLevel === 'CRITICAL' ? 96 : riskLevel === 'HIGH' ? 336 : 1080,
-      };
-
-      if (idx === -1) {
-        return [updatedItem, ...prev];
-      }
-      const updated = [...prev];
-      updated[idx] = { ...updated[idx], ...updatedItem };
-      return updated;
-    });
-    setSelectedMachine(mId);
   };
 
   const activePred = predictions.find((p) => p.machine === selectedMachine) || predictions[0] || {
